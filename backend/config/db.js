@@ -1,13 +1,15 @@
-const { MongoClient } = require('mongodb');
-require('dotenv').config();
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient } = require("@aws-sdk/lib-dynamodb");
+require("dotenv").config();
 
-const uri = process.env.MONGO_URI;
-const dbName = 'admin';
+const dynamoClient = new DynamoDBClient({
+    region: process.env.AWS_REGION, 
+    credentials: {
+        accessKeyId: process.env.ACCESS_KEY,
+        secretAccessKey: process.env.SECRET_KEY,
+    },
+});
 
-const connectDB = async () => {
-    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-    await client.connect();
-    return client.db(dbName);
-};
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-module.exports = connectDB;
+module.exports = docClient;
