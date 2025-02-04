@@ -15,7 +15,7 @@ const tableName = "CSSA-CMS"; // Your DynamoDB table name
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// GET events
+// GET events - GET means that this API sends data
 router.get('/get-events', async (req, res) => {
     try {
         const getFutureEvents = new ScanCommand({
@@ -39,7 +39,7 @@ router.get('/get-events', async (req, res) => {
     }
 });
 
-// POST event
+// POST event - POST means that this API receives data
 router.post('/upload-events', upload.single('poster'), async (req, res) => {
     try {
         const dayOfUpload = new Date();
