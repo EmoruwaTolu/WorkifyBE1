@@ -10,3 +10,71 @@
 // You know where to find me if you need more info
 // I heavily recommend trying to figure it out yourself before using ChatGPT, I think I've documented the code well enough but you can always message me about something that's confusing
 
+const express = require("express");
+const bcrypt = require('bcryptjs');
+const { PutCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const docClient = require("../config/dynamodb");
+
+const router = express.Router();
+const tableName = "StudentAccounts"; // Your DynamoDB table name
+
+// POST users - Creating the User
+router.post('/add-user', async (req, res) => {
+    try {
+        const dayOfUpload = new Date();
+
+        const salt = await bcrypt.genSalt(10);
+        const hashed_pass = await bcrypt.hash(req.body.password, salt)
+        
+        const newUser = {
+            id: `${req.body.FirstName}__${req.body.LastName}__${dayOfUpload.getTime()}`, // Unique ID for DynamoDB
+            FirstName: req.body.FirstName,
+            LastName: req.body.LastName,
+            Email: req.body.Email,
+            password: hashed_pass
+        };
+    
+        // Insert into DynamoDB
+        await docClient.send(new PutCommand({ TableName: tableName, Item: newUser }));
+        res.json(newUser);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+    // console.log("Router Working");
+    // res.end();
+});
+
+// Validating user information and comparing password
+router.post('/validate-user', async (req, res) => {
+    const { Email, password} = req.body; // get inputted email and password 
+
+    if (!Email || !password) {
+        return res.status(400).json({ error: "Email and password are required." });
+    }
+
+    try {
+        const getUser = new GetCommand({
+            TableName: tableName,
+            Key: { Email } // Find using email
+        });
+    
+        const { Item } = await docClient.send(command);
+        if (!Item) {
+            return res.status(404).json({ error: "User does not exist." });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, Item.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: "Incorrect password." });
+        }
+    
+        res.json({ message: "User validated successfully." });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+module.exports = router;
+
