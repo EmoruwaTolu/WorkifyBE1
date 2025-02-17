@@ -26,16 +26,15 @@ router.get('/get-events', async (req, res) => {
             ExpressionAttributeNames: { "#date": "date" },
             ExpressionAttributeValues: { ":now": { S: new Date().toISOString() } },
         });
-
-        console.log(getFutureEvents)
     
         const { Items } = await docClient.send(getFutureEvents);
 
         console.log(Items)
         Items.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
     
+        // The images are being stored in an s3 bucket and this loop is to get all the images for the right events from these buckets
         for (const event of Items) {
-            const getParameters = { Bucket: bucketName, Key: event.eventKey };
+            const getParameters = { Bucket: bucketName, Key: event.eventKey.S };
             event.posterUrl = await getSignedUrl(s3, new GetObjectCommand(getParameters), { expiresIn: 3600 });
         }
         res.json(Items);
