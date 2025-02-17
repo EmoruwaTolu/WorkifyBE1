@@ -1,5 +1,6 @@
 const express = require("express");
 const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { ScanCommand } = require("@aws-sdk/client-dynamodb");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const multer = require("multer");
 const sharp = require("sharp");
@@ -18,14 +19,19 @@ const upload = multer({ storage });
 // GET events - GET means that this API sends data
 router.get('/get-events', async (req, res) => {
     try {
+        console.log("yeah we reached here")
         const getFutureEvents = new ScanCommand({
             TableName: tableName,
             FilterExpression: "#date >= :now",
             ExpressionAttributeNames: { "#date": "date" },
-            ExpressionAttributeValues: { ":now": new Date().toISOString() },
+            ExpressionAttributeValues: { ":now": { S: new Date().toISOString() } },
         });
+
+        console.log(getFutureEvents)
     
         const { Items } = await docClient.send(getFutureEvents);
+
+        console.log(Items)
         Items.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
     
         for (const event of Items) {
