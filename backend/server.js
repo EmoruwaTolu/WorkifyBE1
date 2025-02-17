@@ -8,7 +8,24 @@ const userRoutes = require('./routes/student-users');
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://ueventsfe.onrender.com',
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+  
+// Handle preflight requests
+app.options('*', cors());
 app.use(bodyParser.json());
 
 app.use('/events', eventRoutes);
