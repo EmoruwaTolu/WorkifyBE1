@@ -13,7 +13,7 @@
 const express = require("express");
 const bcrypt = require('bcryptjs');
 const { PutCommand, GetCommand } = require("@aws-sdk/lib-dynamodb");
-const docClient = require("../config/dynamodb");
+const docClient = require("../config/db");
 
 const router = express.Router();
 const tableName = "StudentAccounts"; // Your DynamoDB table name

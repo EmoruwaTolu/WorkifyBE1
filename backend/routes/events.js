@@ -4,7 +4,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const multer = require("multer");
 const sharp = require("sharp");
 const { PutCommand } = require("@aws-sdk/lib-dynamodb");
-const docClient = require("../config/dynamodb");
+const docClient = require("../config/db");
 const s3 = require("../config/s3");
 
 const router = express.Router();
