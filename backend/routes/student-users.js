@@ -25,12 +25,14 @@ router.post('/add-user', async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashed_pass = await bcrypt.hash(req.body.password, salt)
+
+        //TODO: Some kind of way to query and see if the email already exists.
         
         const newUser = {
-            id: `${req.body.FirstName}__${req.body.LastName}__${dayOfUpload.getTime()}`, // Unique ID for DynamoDB
-            FirstName: req.body.FirstName,
-            LastName: req.body.LastName,
-            Email: req.body.Email,
+            "student-aws-id": `${req.body.email}`, // Unique ID for DynamoDB
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
             password: hashed_pass
         };
     
@@ -47,19 +49,19 @@ router.post('/add-user', async (req, res) => {
 
 // Validating user information and comparing password
 router.post('/validate-user', async (req, res) => {
-    const { Email, password} = req.body; // get inputted email and password 
+    const { email, password} = req.body; // get inputted email and password 
 
-    if (!Email || !password) {
+    if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required." });
     }
 
     try {
         const getUser = new GetCommand({
             TableName: tableName,
-            Key: { Email } // Find using email
+            Key: { "student-aws-id": email } // Find using email
         });
     
-        const { Item } = await docClient.send(command);
+        const { Item } = await docClient.send(getUser);
         if (!Item) {
             return res.status(404).json({ error: "User does not exist." });
         }
