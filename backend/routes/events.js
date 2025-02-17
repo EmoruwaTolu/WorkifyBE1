@@ -25,7 +25,7 @@ router.get('/get-events', async (req, res) => {
             ExpressionAttributeValues: { ":now": new Date().toISOString() },
         });
     
-        const { Items } = await docClient.send(command);
+        const { Items } = await docClient.send(getFutureEvents);
         Items.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date
     
         for (const event of Items) {
