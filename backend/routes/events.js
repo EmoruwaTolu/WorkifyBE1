@@ -44,6 +44,53 @@ router.get('/get-events', async (req, res) => {
     }
 });
 
+router.get('/get-events-specific', async (req, res, next) => {
+    try {
+        const { date } = req.query;
+        if (!date || typeof date !== 'string') {
+            throw new createHttpError.BadRequest("Must supply a `date` query parameter");
+        }
+
+        const target = new Date(date);
+        if (isNaN(target.getTime())) {
+            throw new createHttpError.BadRequest("`date` is not a valid ISO date string");
+        }
+
+        const filterExpr  = "#date = :targetDate";
+        const exprNames   = { "#date": "date" };
+        const exprValues  = { ":targetDate": target.toISOString() };
+
+        const scanCmd = new ScanCommand({
+            TableName:            tableName,
+            FilterExpression:     filterExpr,
+            ExpressionAttributeNames:  exprNames,
+            ExpressionAttributeValues: exprValues,
+        });
+
+        const { Items = [] } = await docClient.send(scanCmd);
+
+        Items.sort((a, b) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        await Promise.all(
+            Items.map(async (evt) => {
+            const getParams = { Bucket: bucketName, Key: evt.eventKey };
+            evt.posterUrl = await getSignedUrl(
+                s3,
+                new GetObjectCommand(getParams),
+                { expiresIn: 3600 }
+            );
+            })
+        );
+
+        return res.json(Items);
+    } 
+    catch (err) {
+        return next(err);
+    }
+});
+
 // POST event - POST means that this API receives data
 router.post('/upload-events', upload.single('poster'), async (req, res) => {
     try {
