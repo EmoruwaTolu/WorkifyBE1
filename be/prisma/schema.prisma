@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  club
+}
+
+enum Language {
+  en
+  fr
+}
+
+enum EventStatus {
+  draft
+  published
+  archived
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         Role     @default(student)
+  locale       Language @default(en)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // relations
+  Club      Club?        @relation("ClubOwner")
+  follows   Follow[]
+  saved     SavedEvent[]
+  EventRSVP EventRSVP[]
+}
+
+model Club {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  ownerUserId String   @unique
+  owner       User     @relation("ClubOwner", fields: [ownerUserId], references: [id])
+  bio         String?
+  logoKey     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  followers Follow[]
+  events    Event[]
+}
+
+model Follow {
+  userId    String
+  clubId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, clubId]) // one follow per (user, club)
+  @@index([clubId]) // fast follower count by club
+  @@index([userId, createdAt]) // list a user's follows by recency
+}
+
+model Event {
+  id           String      @id @default(uuid())
+  clubId       String
+  club         Club        @relation(fields: [clubId], references: [id])
+  startAt      DateTime
+  endAt        DateTime?
+  locationName String
+  status       EventStatus @default(draft)
+  tags         String[] // Postgres TEXT[] (optional)
+  createdBy    String // userId (club owner)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  translations EventTranslation[]
+  SavedEvent   SavedEvent[]
+  EventRSVP    EventRSVP[]
+
+  @@index([startAt]) // list by day
+  @@index([clubId, startAt]) // followed-club feeds by date
+}
+
+model EventTranslation {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  lang        Language
+  title       String
+  description String
+  posterKey   String? // per-language poster (S3 key)
+
+  @@unique([eventId, lang]) // at most one translation per language
+}
+
+model SavedEvent {
+  userId    String
+  eventId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, eventId]) // one save per (user, event)
+  @@index([createdAt]) // paginate saved items
+}
+
+model EventRSVP {
+  userId    String
+  eventId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId]) // one row per user/event = "going"
+  @@index([eventId]) // fast going count per event
+  @@index([userId, createdAt]) // "events I'm going to" lists
+}
