@@ -1,0 +1,22 @@
+{
+  "ImageRepository": {
+    "ImageIdentifier": "156041446586.dkr.ecr.us-east-1.amazonaws.com/uevents-api:routes-fix-20251007190815",
+    "ImageConfiguration": {
+      "RuntimeEnvironmentVariables": {
+        "NODE_ENV": "production",
+        "PORT": "4000"
+      },
+      "StartCommand": "node dist/server.js",
+      "Port": "4000",
+      "RuntimeEnvironmentSecrets": {
+        "DATABASE_URL": "arn:aws:secretsmanager:us-east-1:156041446586:secret:prod/uevents/DATABASE_URL-djOD8S",
+        "JWT_SECRET": "arn:aws:secretsmanager:us-east-1:156041446586:secret:prod/uevents/JWT_SECRET-UjVpPZ"
+      }
+    },
+    "ImageRepositoryType": "ECR"
+  },
+  "AutoDeploymentsEnabled": false,
+  "AuthenticationConfiguration": {
+    "AccessRoleArn": "arn:aws:iam::156041446586:role/service-role/AppRunnerECRAccessRole"
+  }
+}

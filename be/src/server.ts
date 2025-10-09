@@ -29,11 +29,37 @@ app.get("/health", (_req: Request, res: Response) => {
     res.json({ ok: true });
 });
 
+if (process.env.SHOW_ROUTES === "true") {
+    app.get("/__routes", (req, res) => {
+        const out: Array<{ method: string; path: string }> = [];
+
+        const walk = (stack: any, base = "") => {
+        if (!Array.isArray(stack)) return;
+        for (const layer of stack) {
+            const r = (layer as any).route;
+            if (r?.path) {
+            const methods = Object.keys(r.methods || {});
+            for (const m of methods) out.push({ method: m.toUpperCase(), path: base + r.path });
+            } else if ((layer as any).name === "router") {
+            const child = (layer as any).handle?.stack;
+            walk(child, base);
+            }
+        }
+        };
+
+        // use req.app and optional chaining so it never throws
+        const stack = (req.app as any)?._router?.stack ?? [];
+        walk(stack);
+        res.json(out);
+    });
+}
+
 app.use(usersRouter);
 app.use(clubsRouter);
-app.use(eventsRouter);
+// app.use(eventsRouter);
 app.use(followsRouter);
 
+app.use((req, res) => res.status(404).json({ error: "Not Found", path: req.path }));
 // Error 404 Handler
 app.use((req: Request, res: Response) => {
     res.status(404).json({ error: "Not Found", path: req.path });
