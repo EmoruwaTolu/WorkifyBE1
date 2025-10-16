@@ -5,7 +5,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "app:start": "npm run prisma:generate && npm run prisma:migrate && npm run build && npm run start"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
